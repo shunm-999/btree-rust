@@ -53,13 +53,21 @@ impl BtreeNode {
             let left = BtreeNode::from(
                 self.keys[..mid_index].to_vec(),
                 self.values[..mid_index].to_vec(),
-                vec![],
+                if self.children.is_empty() {
+                    vec![]
+                } else {
+                    self.children[..=mid_index].to_vec()
+                },
                 self.max_count,
             );
             let right = BtreeNode::from(
                 self.keys[mid_index + 1..].to_vec(),
                 self.values[mid_index + 1..].to_vec(),
-                vec![],
+                if self.children.is_empty() {
+                    vec![]
+                } else {
+                    self.children[mid_index + 1..].to_vec()
+                },
                 self.max_count,
             );
             NodeSplit { left, right }
