@@ -7,11 +7,24 @@ pub(crate) struct BtreeNode {
     children: Vec<Box<BtreeNode>>,
 }
 
+struct Split {
+    left: BtreeNode,
+    right: BtreeNode,
+}
+
 impl BtreeNode {
     pub(crate) fn new() -> Self {
         Self {
             keys: vec![],
             values: vec![],
+            children: vec![],
+        }
+    }
+
+    pub(crate) fn from(keys: Vec<i32>, values: Vec<i32>) -> Self {
+        Self {
+            keys,
+            values,
             children: vec![],
         }
     }
@@ -24,6 +37,24 @@ impl BtreeNode {
 
     pub(crate) fn is_full(&self, max_count: usize) -> bool {
         self.keys.len() >= max_count
+    }
+
+    pub(crate) fn split_node(&self) -> ((i32, i32), Split) {
+        let mid_index = self.keys.len() / 2;
+        let split = {
+            let left = BtreeNode::from(
+                self.keys[..mid_index].to_vec(),
+                self.values[..mid_index].to_vec(),
+            );
+            let right = BtreeNode::from(
+                self.keys[mid_index + 1..].to_vec(),
+                self.values[mid_index + 1..].to_vec(),
+            );
+            Split { left, right }
+        };
+        let key = self.keys[mid_index];
+        let value = self.values[mid_index];
+        ((key, value), split)
     }
 }
 
