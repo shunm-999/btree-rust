@@ -5,12 +5,25 @@ pub(crate) struct BtreeNode {
     keys: Vec<i32>,
     values: Vec<i32>,
     children: Vec<Box<BtreeNode>>,
-    is_leaf: bool,
 }
 
 impl BtreeNode {
-    fn count(&self) -> usize {
-        self.keys.len()
+    pub(crate) fn new() -> Self {
+        Self {
+            keys: vec![],
+            values: vec![],
+            children: vec![],
+        }
+    }
+}
+
+impl BtreeNode {
+    pub(crate) fn is_leaf(&self) -> bool {
+        self.children.is_empty()
+    }
+
+    pub(crate) fn is_full(&self, max_count: usize) -> bool {
+        self.keys.len() >= max_count
     }
 }
 
@@ -21,7 +34,7 @@ impl Search for BtreeNode {
             Ok(i) => Some((self.keys[i], self.values[i])),
             // key not found, recurse into appropriate child node
             Err(i) => {
-                if self.is_leaf {
+                if self.is_leaf() {
                     None // key not found, and no children to search
                 } else {
                     self.children[i].search(key)
@@ -39,7 +52,7 @@ impl Insert for BtreeNode {
                 self.values[i] = value;
             }
             Err(i) => {
-                if self.is_leaf {
+                if self.is_leaf() {
                     self.keys.insert(i, key);
                     self.values.insert(i, value);
                 } else {

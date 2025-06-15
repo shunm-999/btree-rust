@@ -1,5 +1,5 @@
-use crate::btree::Search;
 use crate::btree::node::BtreeNode;
+use crate::btree::{Insert, Search};
 
 #[derive(Clone)]
 pub(crate) struct Btree {
@@ -22,5 +22,13 @@ impl Search for Btree {
             None => None,
             Some(root) => root.search(target_key),
         }
+    }
+}
+
+impl Insert for Btree {
+    fn insert(&mut self, key: i32, value: i32) {
+        let mut root = self.root.take().unwrap_or(BtreeNode::new());
+        root.insert(key, value);
+        self.root = Some(root);
     }
 }
