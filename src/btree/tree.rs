@@ -1,5 +1,6 @@
 use crate::btree::node::BtreeNode;
 
+#[derive(Clone)]
 pub(crate) struct Btree {
     root: Option<BtreeNode>,
     degree: usize,
