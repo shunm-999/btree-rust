@@ -8,9 +8,9 @@ pub(crate) struct BtreeNode {
     max_count: usize,
 }
 
-struct Split {
-    left: BtreeNode,
-    right: BtreeNode,
+pub(crate) struct NodeSplit {
+    pub(crate) left: BtreeNode,
+    pub(crate) right: BtreeNode,
 }
 
 impl BtreeNode {
@@ -23,11 +23,16 @@ impl BtreeNode {
         }
     }
 
-    fn from(keys: Vec<i32>, values: Vec<i32>, max_count: usize) -> Self {
+    pub(crate) fn from(
+        keys: Vec<i32>,
+        values: Vec<i32>,
+        children: Vec<Box<BtreeNode>>,
+        max_count: usize,
+    ) -> Self {
         Self {
             keys,
             values,
-            children: vec![],
+            children,
             max_count,
         }
     }
@@ -42,20 +47,22 @@ impl BtreeNode {
         self.keys.len() >= self.max_count
     }
 
-    pub(crate) fn split_node(&self) -> ((i32, i32), Split) {
+    pub(crate) fn split_node(&self) -> ((i32, i32), NodeSplit) {
         let mid_index = self.keys.len() / 2;
         let split = {
             let left = BtreeNode::from(
                 self.keys[..mid_index].to_vec(),
                 self.values[..mid_index].to_vec(),
+                vec![],
                 self.max_count,
             );
             let right = BtreeNode::from(
                 self.keys[mid_index + 1..].to_vec(),
                 self.values[mid_index + 1..].to_vec(),
+                vec![],
                 self.max_count,
             );
-            Split { left, right }
+            NodeSplit { left, right }
         };
         let key = self.keys[mid_index];
         let value = self.values[mid_index];
@@ -95,8 +102,8 @@ impl Insert for BtreeNode {
                     self.children[i].insert(key, value);
 
                     if self.children[i].is_full() {
-                        let ((key, value), split) = self.children[i].split_node();
-                        let Split { left, right } = split;
+                        let ((key, value), NodeSplit { left, right }) =
+                            self.children[i].split_node();
 
                         self.keys.insert(i, key);
                         self.values.insert(i, value);

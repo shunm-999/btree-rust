@@ -1,4 +1,4 @@
-use crate::btree::node::BtreeNode;
+use crate::btree::node::{BtreeNode, NodeSplit};
 use crate::btree::{Insert, Search};
 
 #[derive(Clone)]
@@ -29,6 +29,17 @@ impl Insert for Btree {
     fn insert(&mut self, key: i32, value: i32) {
         let mut root = self.root.take().unwrap_or(BtreeNode::new(self.max_count));
         root.insert(key, value);
+
+        if root.is_full() {
+            let ((key, value), NodeSplit { left, right }) = root.split_node();
+            root = BtreeNode::from(
+                vec![key],
+                vec![value],
+                vec![Box::new(left), Box::new(right)],
+                self.max_count,
+            );
+        }
+
         self.root = Some(root);
     }
 }
