@@ -9,21 +9,12 @@ pub(crate) struct BtreeNode {
 }
 
 impl Search for BtreeNode {
-    fn search(&self, target_key: i32) -> Option<i32> {
-        let mut found_index = None;
-
-        self.keys.iter().enumerate().for_each(|(index, key)| {
-            if key == &target_key {
-                found_index = Some(index);
-            }
-        });
-
-        if found_index != None {
-            // そのノード内でkeyがヒットしたら、値を返す
-            return Some(self.values[found_index.unwrap()]);
+    fn search(&self, target_key: i32) -> Option<(i32, i32)> {
+        if let Some(i) = self.keys.iter().position(|&k| k == target_key) {
+            return Some((self.keys[i], self.values[i]));
         }
-        if found_index == None && self.is_leaf {
-            // keyがヒットしないかつ、根ノードの場合はkeyは存在しない
+        if self.is_leaf {
+            // If the key is not found and this is a leaf, the search ends here.
             return None;
         }
 
