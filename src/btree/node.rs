@@ -10,20 +10,17 @@ pub(crate) struct BtreeNode {
 
 impl Search for BtreeNode {
     fn search(&self, target_key: i32) -> Option<(i32, i32)> {
-        if let Some(i) = self.keys.iter().position(|&k| k == target_key) {
-            return Some((self.keys[i], self.values[i]));
+        match self.keys.binary_search(&target_key) {
+            // key found in this node
+            Ok(i) => Some((self.keys[i], self.values[i])),
+            // key not found, recurse into appropriate child node
+            Err(i) => {
+                if self.is_leaf {
+                    None  // key not found, and no children to search
+                } else {
+                    self.children[i].search(target_key)
+                }
+            }
         }
-        if self.is_leaf {
-            // If the key is not found and this is a leaf, the search ends here.
-            return None;
-        }
-
-        let child_index = self
-            .keys
-            .iter()
-            .position(|&k| target_key <= k)
-            .unwrap_or(self.keys.len());
-
-        self.children[child_index].search(target_key)
     }
 }
