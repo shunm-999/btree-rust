@@ -86,15 +86,15 @@ mod tests {
     #[test]
     fn test_node_split() {
         let mut tree = Btree::new(3); // max_count = 3 のノード
-        
+
         // ノードがいっぱいになるまで挿入
         tree.insert(10, 100);
         tree.insert(20, 200);
         tree.insert(30, 300);
-        
+
         // 4つ目の要素を挿入して分割を発生させる
         tree.insert(40, 400);
-        
+
         // 分割後も全ての要素が正しく検索できることを確認
         assert_eq!(tree.search(10), Some((10, 100)));
         assert_eq!(tree.search(20), Some((20, 200)));
@@ -105,12 +105,12 @@ mod tests {
     #[test]
     fn test_multiple_splits() {
         let mut tree = Btree::new(3);
-        
+
         // 複数回の分割を発生させる
         for i in 1..=10 {
             tree.insert(i * 10, i * 100);
         }
-        
+
         // 全ての要素が正しく検索できることを確認
         for i in 1..=10 {
             assert_eq!(tree.search(i * 10), Some((i * 10, i * 100)));
