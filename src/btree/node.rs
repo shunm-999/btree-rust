@@ -1,13 +1,11 @@
+use crate::btree::Search;
+
 #[derive(Clone)]
 pub(crate) struct BtreeNode {
     keys: Vec<i32>,
     values: Vec<i32>,
     children: Vec<Box<BtreeNode>>,
     is_leaf: bool,
-}
-
-pub(crate) trait Search {
-    fn search(&self, target_key: i32) -> Option<i32>;
 }
 
 impl Search for BtreeNode {
