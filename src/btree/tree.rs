@@ -1,15 +1,18 @@
-use crate::btree::node::BtreeNode;
 use crate::btree::Search;
+use crate::btree::node::BtreeNode;
 
 #[derive(Clone)]
 pub(crate) struct Btree {
     root: Option<BtreeNode>,
-    degree: usize,
+    max_count: usize,
 }
 
 impl Btree {
-    fn new(degree: usize) -> Self {
-        Btree { root: None, degree }
+    fn new(max_count: usize) -> Self {
+        Btree {
+            root: None,
+            max_count,
+        }
     }
 }
 
