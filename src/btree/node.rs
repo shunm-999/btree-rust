@@ -5,6 +5,7 @@ pub(crate) struct BtreeNode {
     keys: Vec<i32>,
     values: Vec<i32>,
     children: Vec<Box<BtreeNode>>,
+    max_count: usize,
 }
 
 struct Split {
@@ -13,19 +14,21 @@ struct Split {
 }
 
 impl BtreeNode {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(max_count: usize) -> Self {
         Self {
             keys: vec![],
             values: vec![],
             children: vec![],
+            max_count,
         }
     }
 
-    pub(crate) fn from(keys: Vec<i32>, values: Vec<i32>) -> Self {
+    fn from(keys: Vec<i32>, values: Vec<i32>, max_count: usize) -> Self {
         Self {
             keys,
             values,
             children: vec![],
+            max_count,
         }
     }
 }
@@ -35,8 +38,8 @@ impl BtreeNode {
         self.children.is_empty()
     }
 
-    pub(crate) fn is_full(&self, max_count: usize) -> bool {
-        self.keys.len() >= max_count
+    pub(crate) fn is_full(&self) -> bool {
+        self.keys.len() >= self.max_count
     }
 
     pub(crate) fn split_node(&self) -> ((i32, i32), Split) {
@@ -45,10 +48,12 @@ impl BtreeNode {
             let left = BtreeNode::from(
                 self.keys[..mid_index].to_vec(),
                 self.values[..mid_index].to_vec(),
+                self.max_count,
             );
             let right = BtreeNode::from(
                 self.keys[mid_index + 1..].to_vec(),
                 self.values[mid_index + 1..].to_vec(),
+                self.max_count,
             );
             Split { left, right }
         };
@@ -88,6 +93,17 @@ impl Insert for BtreeNode {
                     self.values.insert(i, value);
                 } else {
                     self.children[i].insert(key, value);
+
+                    if self.children[i].is_full() {
+                        let ((key, value), split) = self.children[i].split_node();
+                        let Split { left, right } = split;
+
+                        self.keys.insert(i, key);
+                        self.values.insert(i, value);
+
+                        self.children[i] = Box::new(left);
+                        self.children.insert(i + 1, Box::new(right));
+                    }
                 }
             }
         }

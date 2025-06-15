@@ -27,7 +27,7 @@ impl Search for Btree {
 
 impl Insert for Btree {
     fn insert(&mut self, key: i32, value: i32) {
-        let mut root = self.root.take().unwrap_or(BtreeNode::new());
+        let mut root = self.root.take().unwrap_or(BtreeNode::new(self.max_count));
         root.insert(key, value);
         self.root = Some(root);
     }
