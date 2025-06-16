@@ -39,20 +39,39 @@ impl BtreeNode {
 }
 
 impl BtreeNode {
-    pub(crate) fn is_leaf(&self) -> bool {
+    fn is_leaf(&self) -> bool {
         self.children.is_empty()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.keys.is_empty()
+    }
+
+    fn current_count(&self) -> usize {
+        self.keys.len()
+    }
+    fn min_count(&self) -> usize {
+        (self.max_count - 1) / 2
+    }
+
+    fn remove_head(&mut self) -> (i32, i32) {
+        let key = self.keys.remove(0);
+        let value = self.values.remove(0);
+        (key, value)
+    }
+
+    fn remove_tail(&mut self) -> (i32, i32) {
+        let key = self.keys.remove(self.keys.len() - 1);
+        let value = self.values.remove(self.values.len() - 1);
+        (key, value)
     }
 
     pub(crate) fn is_full(&self) -> bool {
         self.keys.len() >= self.max_count
     }
 
-    pub(crate) fn is_empty(&self) -> bool {
-        self.keys.is_empty()
-    }
-
-    pub(crate) fn count(&self) -> usize {
-        self.keys.len()
+    pub(crate) fn is_less_than_min_count(&self) -> bool {
+        self.current_count() < self.min_count()
     }
 
     pub(crate) fn split_node(&self) -> ((i32, i32), NodeSplit) {
@@ -137,13 +156,21 @@ impl Delete for BtreeNode {
     fn delete(&mut self, key: i32) {
         match self.keys.binary_lookup(&key) {
             Ok(i) => {
-                self.keys.remove(i);
-                self.values.remove(i);
+                if self.is_leaf() {
+                    // 葉ノードの場合はそのまま削除
+                    self.keys.remove(i);
+                    self.values.remove(i);
+                    return;
+                }
+                // 内部ノードの場合
+                // a: 左側がminCount以上
             }
             Err(i) => {
-                if !self.is_leaf() {
-                    self.children[i].delete(key);
+                if self.is_leaf() {
+                    // keyが存在しない
+                    return;
                 }
+                self.children[i].delete(key);
             }
         }
     }
