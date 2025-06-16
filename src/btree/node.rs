@@ -1,4 +1,4 @@
-use crate::btree::{Delete, Insert, Search};
+use crate::btree::{BinarySearch, Delete, Insert, Search};
 
 #[derive(Clone)]
 pub(crate) struct BtreeNode {
@@ -88,7 +88,7 @@ impl BtreeNode {
 
 impl Search for BtreeNode {
     fn search(&self, key: i32) -> Option<(i32, i32)> {
-        match self.keys.binary_search(&key) {
+        match self.keys.binary_lookup(&key) {
             // key found in this node
             Ok(i) => Some((self.keys[i], self.values[i])),
             // key not found, recurse into appropriate child node
@@ -105,7 +105,7 @@ impl Search for BtreeNode {
 
 impl Insert for BtreeNode {
     fn insert(&mut self, key: i32, value: i32) {
-        match self.keys.binary_search(&key) {
+        match self.keys.binary_lookup(&key) {
             Ok(i) => {
                 self.keys[i] = key;
                 self.values[i] = value;
@@ -135,7 +135,7 @@ impl Insert for BtreeNode {
 
 impl Delete for BtreeNode {
     fn delete(&mut self, key: i32) {
-        match self.keys.binary_search(&key) {
+        match self.keys.binary_lookup(&key) {
             Ok(i) => {
                 self.keys.remove(i);
                 self.values.remove(i);

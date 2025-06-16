@@ -2,7 +2,7 @@ use crate::btree::node::{BtreeNode, NodeSplit};
 use crate::btree::{Insert, Search};
 
 #[derive(Clone)]
-pub(crate) struct Btree {
+pub struct Btree {
     root: Option<BtreeNode>,
     max_count: usize,
 }
