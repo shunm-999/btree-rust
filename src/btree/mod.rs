@@ -8,3 +8,7 @@ pub(crate) trait Search {
 pub(crate) trait Insert {
     fn insert(&mut self, key: i32, value: i32);
 }
+
+pub(crate) trait Delete {
+    fn delete(&mut self, key: i32);
+}

@@ -1,4 +1,4 @@
-use crate::btree::{Insert, Search};
+use crate::btree::{Delete, Insert, Search};
 
 #[derive(Clone)]
 pub(crate) struct BtreeNode {
@@ -45,6 +45,14 @@ impl BtreeNode {
 
     pub(crate) fn is_full(&self) -> bool {
         self.keys.len() >= self.max_count
+    }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        self.keys.is_empty()
+    }
+
+    pub(crate) fn count(&self) -> usize {
+        self.keys.len()
     }
 
     pub(crate) fn split_node(&self) -> ((i32, i32), NodeSplit) {
@@ -119,6 +127,22 @@ impl Insert for BtreeNode {
                         self.children[i] = Box::new(left);
                         self.children.insert(i + 1, Box::new(right));
                     }
+                }
+            }
+        }
+    }
+}
+
+impl Delete for BtreeNode {
+    fn delete(&mut self, key: i32) {
+        match self.keys.binary_search(&key) {
+            Ok(i) => {
+                self.keys.remove(i);
+                self.values.remove(i);
+            }
+            Err(i) => {
+                if !self.is_leaf() {
+                    self.children[i].delete(key);
                 }
             }
         }
