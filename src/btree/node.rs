@@ -151,6 +151,30 @@ impl Search for BtreeNode {
     }
 }
 
+impl BtreeNode {
+    fn pop_min(&mut self) -> Option<(i32, i32)> {
+        if !self.is_leaf() {
+            return self.children[0].pop_min();
+        }
+        if self.is_more_than_min_count() {
+            let entry = self.remove_head_entry();
+            return Some(entry);
+        }
+        None
+    }
+    fn pop_max(&mut self) -> Option<(i32, i32)> {
+        if !self.is_leaf() {
+            return self.children[0].pop_max();
+        }
+
+        if self.is_more_than_min_count() {
+            let entry = self.remove_tail_entry();
+            return Some(entry);
+        }
+        None
+    }
+}
+
 impl Insert for BtreeNode {
     fn insert(&mut self, key: i32, value: i32) {
         match self.keys.binary_lookup(&key) {
@@ -191,7 +215,6 @@ impl Delete for BtreeNode {
                     self.values.remove(i);
                 } else {
                     // 内部ノードの場合
-                    // a: 左側がminCount以上
                 }
             }
             Err(i) => match self.get_delete_from_child_operation(key, i) {
@@ -260,6 +283,12 @@ impl Delete for BtreeNode {
     }
 }
 
+enum DeleteFromSelfOperation {
+    Replace(i32, i32),
+    Merge,
+    MergeToSelf,
+}
+
 enum DeleteFromChildOperation {
     None,
     Delete,
@@ -268,6 +297,12 @@ enum DeleteFromChildOperation {
     MergeToLeft,
     MergeToRight,
     MergeToSelf,
+}
+
+impl BtreeNode {
+    fn get_delete_from_self_operation() -> DeleteFromSelfOperation {
+        todo!()
+    }
 }
 
 impl BtreeNode {
