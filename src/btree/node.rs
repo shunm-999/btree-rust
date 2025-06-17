@@ -51,7 +51,7 @@ impl BtreeNode {
         self.keys.len()
     }
     fn min_count(&self) -> usize {
-        (self.max_count - 1) / 2
+        self.max_count / 2
     }
 
     fn remove_head(&mut self) -> (i32, i32) {
@@ -70,8 +70,12 @@ impl BtreeNode {
         self.keys.len() >= self.max_count
     }
 
-    pub(crate) fn is_less_than_min_count(&self) -> bool {
-        self.current_count() < self.min_count()
+    pub(crate) fn is_more_than_min_count(&self) -> bool {
+        self.current_count() > self.min_count()
+    }
+
+    pub(crate) fn has_key(&self, key: i32) -> bool {
+        self.keys.contains(&key)
     }
 
     pub(crate) fn split_node(&self) -> ((i32, i32), NodeSplit) {
@@ -160,14 +164,28 @@ impl Delete for BtreeNode {
                     // 葉ノードの場合はそのまま削除
                     self.keys.remove(i);
                     self.values.remove(i);
-                    return;
+                } else {
+                    // 内部ノードの場合
+                    // a: 左側がminCount以上
                 }
-                // 内部ノードの場合
-                // a: 左側がminCount以上
             }
             Err(i) => {
                 if self.is_leaf() {
-                    // keyが存在しない
+                    // 葉ノードにkeyが存在しない
+                    return;
+                }
+                if !self.children[i].is_leaf() {
+                    // 子ノードが内部ノードなら、再起的に処理する
+                    self.children[i].delete(key);
+                    return;
+                }
+                if !self.children[i].has_key(key) {
+                    // 子ノードが葉ノードかつ、keyが存在しない
+                    return;
+                }
+                if self.children[i].is_more_than_min_count() {
+                    // 子ノードが葉ノードかつ、minCountより大きいなら再起的に処理する
+                    self.children[i].delete(key);
                     return;
                 }
                 self.children[i].delete(key);
