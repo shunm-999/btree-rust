@@ -54,18 +54,25 @@ impl BtreeNode {
         self.max_count / 2
     }
 
-    fn push(&mut self, key: i32, value: i32) {
+    fn push_kv(&mut self, pair: (i32, i32)) {
+        let (key, value) = pair;
         self.keys.push(key);
         self.values.push(value);
     }
 
-    fn remove_head(&mut self) -> (i32, i32) {
+    fn insert_kv(&mut self, index: usize, pair: (i32, i32)) {
+        let (key, value) = pair;
+        self.keys.insert(index, key);
+        self.values.insert(index, value);
+    }
+
+    fn remove_head_kv(&mut self) -> (i32, i32) {
         let key = self.keys.remove(0);
         let value = self.values.remove(0);
         (key, value)
     }
 
-    fn remove_tail(&mut self) -> (i32, i32) {
+    fn remove_tail_kv(&mut self) -> (i32, i32) {
         let key = self.keys.remove(self.keys.len() - 1);
         let value = self.values.remove(self.values.len() - 1);
         (key, value)
@@ -174,29 +181,33 @@ impl Delete for BtreeNode {
                     // a: 左側がminCount以上
                 }
             }
-            Err(i) => {
-                if self.is_leaf() {
-                    // 葉ノードにkeyが存在しない
-                    return;
-                }
-                if !self.children[i].is_leaf() {
-                    // 子ノードが内部ノードなら、再起的に処理する
+            Err(i) => match self.get_delete_from_child_operation(key, i) {
+                DeleteFromChildOperation::None => {}
+                DeleteFromChildOperation::Delete => {
                     self.children[i].delete(key);
-                    return;
                 }
-                if !self.children[i].has_key(key) {
-                    // 子ノードが葉ノードかつ、keyが存在しない
-                    return;
-                }
-                if self.children[i].is_more_than_min_count() {
-                    // 子ノードが葉ノードかつ、minCountより大きいなら再起的に処理する
+                DeleteFromChildOperation::RotateLeft => {
                     self.children[i].delete(key);
-                    return;
-                }
-                // 子ノードが葉ノードかつ、minCount以下
 
-                self.children[i].delete(key);
-            }
+                    let head = self.remove_head_kv();
+                    self.children[i].push_kv(head);
+
+                    let head = self.children[i + 1].remove_head_kv();
+                    self.insert_kv(0, head);
+                }
+                DeleteFromChildOperation::RotateRight => {
+                    self.children[i].delete(key);
+
+                    let tail = self.remove_tail_kv();
+                    self.children[i].insert_kv(0, tail);
+
+                    let tail = self.children[i - 1].remove_tail_kv();
+                    self.push_kv(tail);
+                }
+                DeleteFromChildOperation::MergeToLeft => {}
+                DeleteFromChildOperation::MergeToRight => {}
+                DeleteFromChildOperation::MergeToSelf => {}
+            },
         }
     }
 }
