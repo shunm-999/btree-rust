@@ -8,6 +8,12 @@ pub(crate) struct BtreeNode {
     max_count: usize,
 }
 
+#[derive(Clone)]
+pub(crate) struct BtreeNodeEntry {
+    keys: Vec<i32>,
+    values: Vec<i32>,
+}
+
 pub(crate) struct NodeSplit {
     pub(crate) left: BtreeNode,
     pub(crate) right: BtreeNode,
@@ -60,19 +66,19 @@ impl BtreeNode {
         self.values.push(value);
     }
 
-    fn insert_kv(&mut self, index: usize, pair: (i32, i32)) {
+    fn insert_entry(&mut self, index: usize, pair: (i32, i32)) {
         let (key, value) = pair;
         self.keys.insert(index, key);
         self.values.insert(index, value);
     }
 
-    fn remove_head_kv(&mut self) -> (i32, i32) {
+    fn remove_head_entry(&mut self) -> (i32, i32) {
         let key = self.keys.remove(0);
         let value = self.values.remove(0);
         (key, value)
     }
 
-    fn remove_tail_kv(&mut self) -> (i32, i32) {
+    fn remove_tail_entry(&mut self) -> (i32, i32) {
         let key = self.keys.remove(self.keys.len() - 1);
         let value = self.values.remove(self.values.len() - 1);
         (key, value)
@@ -118,6 +124,13 @@ impl BtreeNode {
         let key = self.keys[mid_index];
         let value = self.values[mid_index];
         ((key, value), split)
+    }
+
+    pub(crate) fn entry(self) -> BtreeNodeEntry {
+        BtreeNodeEntry {
+            keys: self.keys,
+            values: self.values,
+        }
     }
 }
 
@@ -189,23 +202,44 @@ impl Delete for BtreeNode {
                 DeleteFromChildOperation::RotateLeft => {
                     self.children[i].delete(key);
 
-                    let head = self.remove_head_kv();
+                    let head = self.remove_head_entry();
                     self.children[i].push_kv(head);
 
-                    let head = self.children[i + 1].remove_head_kv();
-                    self.insert_kv(0, head);
+                    let head = self.children[i + 1].remove_head_entry();
+                    self.insert_entry(0, head);
                 }
                 DeleteFromChildOperation::RotateRight => {
                     self.children[i].delete(key);
 
-                    let tail = self.remove_tail_kv();
-                    self.children[i].insert_kv(0, tail);
+                    let tail = self.remove_tail_entry();
+                    self.children[i].insert_entry(0, tail);
 
-                    let tail = self.children[i - 1].remove_tail_kv();
+                    let tail = self.children[i - 1].remove_tail_entry();
                     self.push_kv(tail);
                 }
-                DeleteFromChildOperation::MergeToLeft => {}
-                DeleteFromChildOperation::MergeToRight => {}
+                DeleteFromChildOperation::MergeToLeft => {
+                    self.children[i].delete(key);
+
+                    let tail = self.remove_tail_entry();
+                    self.children[i - 1].push_kv(tail);
+
+                    if let Some(child) = self.children.pop() {
+                        for entry in child.entry() {
+                            self.children[i - 1].push_kv(entry);
+                        }
+                    }
+                }
+                DeleteFromChildOperation::MergeToRight => {
+                    self.children[i].delete(key);
+
+                    let head = self.remove_head_entry();
+                    self.children[i + 1].insert_entry(0, head);
+
+                    let child = self.children.remove(0);
+                    for entry in child.entry().rev() {
+                        self.children[i + 1].insert_entry(0, entry);
+                    }
+                }
                 DeleteFromChildOperation::MergeToSelf => {}
             },
         }
@@ -259,5 +293,24 @@ impl BtreeNode {
             return DeleteFromChildOperation::MergeToRight;
         }
         DeleteFromChildOperation::MergeToSelf
+    }
+}
+
+impl Iterator for BtreeNodeEntry {
+    type Item = (i32, i32);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.keys.is_empty() {
+            return None;
+        }
+        Some((self.keys.remove(0), self.values.remove(0)))
+    }
+}
+
+impl DoubleEndedIterator for BtreeNodeEntry {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let key = self.keys.pop()?;
+        let value = self.values.pop()?;
+        Some((key, value))
     }
 }
