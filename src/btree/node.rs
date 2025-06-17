@@ -240,7 +240,21 @@ impl Delete for BtreeNode {
                         self.children[i + 1].insert_entry(0, entry);
                     }
                 }
-                DeleteFromChildOperation::MergeToSelf => {}
+                DeleteFromChildOperation::MergeToSelf => {
+                    let left_child = self.children.remove(0);
+                    let right_child = self.children.remove(0);
+
+                    let mut new_keys = left_child.keys;
+                    new_keys.extend(&self.keys);
+                    new_keys.extend(right_child.keys);
+
+                    let mut new_values = left_child.values;
+                    new_values.extend(&self.values);
+                    new_values.extend(right_child.values);
+
+                    self.keys = new_keys;
+                    self.values = new_values;
+                }
             },
         }
     }
