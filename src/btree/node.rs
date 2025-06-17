@@ -54,6 +54,11 @@ impl BtreeNode {
         self.max_count / 2
     }
 
+    fn push(&mut self, key: i32, value: i32) {
+        self.keys.push(key);
+        self.values.push(value);
+    }
+
     fn remove_head(&mut self) -> (i32, i32) {
         let key = self.keys.remove(0);
         let value = self.values.remove(0);
@@ -188,8 +193,50 @@ impl Delete for BtreeNode {
                     self.children[i].delete(key);
                     return;
                 }
+                // 子ノードが葉ノードかつ、minCount以下
+
                 self.children[i].delete(key);
             }
         }
+    }
+}
+
+enum DeleteFromChildOperation {
+    None,
+    Delete,
+    RotateLeft,
+    RotateRight,
+    MergeToLeft,
+    MergeToRight,
+    MergeToSelf,
+}
+
+impl BtreeNode {
+    fn get_delete_from_child_operation(&self, key: i32, index: usize) -> DeleteFromChildOperation {
+        if self.is_leaf() {
+            // 葉ノードにkeyが存在しない
+            return DeleteFromChildOperation::None;
+        }
+        if !self.children[index].is_leaf() {
+            // 子ノードが内部ノード
+            return DeleteFromChildOperation::Delete;
+        }
+        if !self.children[index].has_key(key) {
+            // 子ノードが葉ノードかつ、keyが存在しない
+            return DeleteFromChildOperation::None;
+        }
+        if self.children[index].is_more_than_min_count() {
+            // 子ノードが葉ノードかつ、minCountより大きいなら再起的に処理する
+            return DeleteFromChildOperation::Delete;
+        }
+        if index == self.children.len() - 1 && self.children[index - 1].is_more_than_min_count() {
+            // 子ノードが一番右かつ、一つ左が十分なノードを持っている
+            return DeleteFromChildOperation::RotateRight;
+        }
+        if index < self.children.len() - 1 && self.children[index + 1].is_more_than_min_count() {
+            // 子ノードが一番左かつ、一つ右が十分なノードを持っている
+            return DeleteFromChildOperation::RotateLeft;
+        }
+        todo!()
     }
 }
