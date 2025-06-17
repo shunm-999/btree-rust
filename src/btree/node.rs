@@ -221,10 +221,12 @@ impl BtreeNode {
             // 子ノードが内部ノード
             return DeleteFromChildOperation::Delete;
         }
+
         if !self.children[index].has_key(key) {
             // 子ノードが葉ノードかつ、keyが存在しない
             return DeleteFromChildOperation::None;
         }
+
         if self.children[index].is_more_than_min_count() {
             // 子ノードが葉ノードかつ、minCountより大きいなら再起的に処理する
             return DeleteFromChildOperation::Delete;
@@ -237,6 +239,14 @@ impl BtreeNode {
             // 子ノードが一番左かつ、一つ右が十分なノードを持っている
             return DeleteFromChildOperation::RotateLeft;
         }
-        todo!()
+        if self.current_count() != 1 && index == self.children.len() - 1 {
+            // 子ノードが一番右かつ、一つ左が十分なノードを持っていない
+            return DeleteFromChildOperation::MergeToLeft;
+        }
+        if self.current_count() != 1 && index < self.children.len() - 1 {
+            // 子ノードが一番左かつ、一つ右が十分なノードを持っていない
+            return DeleteFromChildOperation::MergeToRight;
+        }
+        DeleteFromChildOperation::MergeToSelf
     }
 }
