@@ -1,4 +1,4 @@
-use crate::btree::{BinarySearch, Delete, Insert, Search};
+use crate::btree::{BinarySearch, Delete, Insert, Merge, Search};
 
 #[derive(Clone)]
 pub(crate) struct BtreeNode {
@@ -215,76 +215,35 @@ impl Delete for BtreeNode {
                     self.values.remove(i);
                 } else {
                     // 内部ノードの場合
+                    let operation = self.resolve_delete_from_self_operation();
+                    self.apply_delete_from_self_operation(i, operation);
                 }
             }
-            Err(i) => match self.get_delete_from_child_operation(key, i) {
-                DeleteFromChildOperation::None => {}
-                DeleteFromChildOperation::Delete => {
-                    self.children[i].delete(key);
-                }
-                DeleteFromChildOperation::RotateLeft => {
-                    self.children[i].delete(key);
+            Err(i) => {
+                let operation = self.get_delete_from_child_operation(key, i);
+                self.apply_delete_from_child_operation(key, i, operation);
+            }
+        }
+    }
+}
 
-                    let head = self.remove_head_entry();
-                    self.children[i].push_kv(head);
-
-                    let head = self.children[i + 1].remove_head_entry();
-                    self.insert_entry(0, head);
-                }
-                DeleteFromChildOperation::RotateRight => {
-                    self.children[i].delete(key);
-
-                    let tail = self.remove_tail_entry();
-                    self.children[i].insert_entry(0, tail);
-
-                    let tail = self.children[i - 1].remove_tail_entry();
-                    self.push_kv(tail);
-                }
-                DeleteFromChildOperation::MergeToLeft => {
-                    self.children[i].delete(key);
-
-                    let tail = self.remove_tail_entry();
-                    self.children[i - 1].push_kv(tail);
-
-                    if let Some(child) = self.children.pop() {
-                        for entry in child.entry() {
-                            self.children[i - 1].push_kv(entry);
-                        }
-                    }
-                }
-                DeleteFromChildOperation::MergeToRight => {
-                    self.children[i].delete(key);
-
-                    let head = self.remove_head_entry();
-                    self.children[i + 1].insert_entry(0, head);
-
-                    let child = self.children.remove(0);
-                    for entry in child.entry().rev() {
-                        self.children[i + 1].insert_entry(0, entry);
-                    }
-                }
-                DeleteFromChildOperation::MergeToSelf => {
-                    let left_child = self.children.remove(0);
-                    let right_child = self.children.remove(0);
-
-                    let mut new_keys = left_child.keys;
-                    new_keys.extend(&self.keys);
-                    new_keys.extend(right_child.keys);
-
-                    let mut new_values = left_child.values;
-                    new_values.extend(&self.values);
-                    new_values.extend(right_child.values);
-
-                    self.keys = new_keys;
-                    self.values = new_values;
-                }
-            },
+impl Merge for BtreeNode {
+    fn merge(self, other: Self) -> Self {
+        let keys = [self.keys, other.keys].concat();
+        let values = [self.values, other.values].concat();
+        let children = [self.children, other.children].concat();
+        let max_count = self.max_count;
+        Self {
+            keys,
+            values,
+            children,
+            max_count,
         }
     }
 }
 
 enum DeleteFromSelfOperation {
-    Replace(i32, i32),
+    Replace((i32, i32)),
     Merge,
     MergeToSelf,
 }
@@ -300,8 +259,39 @@ enum DeleteFromChildOperation {
 }
 
 impl BtreeNode {
-    fn get_delete_from_self_operation() -> DeleteFromSelfOperation {
-        todo!()
+    fn resolve_delete_from_self_operation(&mut self) -> DeleteFromSelfOperation {
+        if let Some(entry) = self.children[0].pop_max() {
+            return DeleteFromSelfOperation::Replace(entry);
+        }
+        if let Some(entry) = self.children[1].pop_min() {
+            return DeleteFromSelfOperation::Replace(entry);
+        }
+        if self.current_count() != 1 {
+            return DeleteFromSelfOperation::Merge;
+        }
+        DeleteFromSelfOperation::MergeToSelf
+    }
+
+    fn apply_delete_from_self_operation(
+        &mut self,
+        index: usize,
+        operation: DeleteFromSelfOperation,
+    ) {
+        match operation {
+            DeleteFromSelfOperation::Replace((key, value)) => {
+                self.keys[index] = key;
+                self.values[index] = value;
+            }
+            DeleteFromSelfOperation::Merge => {
+                self.keys.remove(index);
+                self.values.remove(index);
+
+                let left = self.children.remove(index);
+                let right = self.children.remove(index);
+                self.children.insert(index, left.merge(right));
+            }
+            DeleteFromSelfOperation::MergeToSelf => {}
+        }
     }
 }
 
@@ -342,6 +332,76 @@ impl BtreeNode {
             return DeleteFromChildOperation::MergeToRight;
         }
         DeleteFromChildOperation::MergeToSelf
+    }
+
+    fn apply_delete_from_child_operation(
+        &mut self,
+        key: i32,
+        index: usize,
+        operation: DeleteFromChildOperation,
+    ) {
+        match operation {
+            DeleteFromChildOperation::None => {}
+            DeleteFromChildOperation::Delete => {
+                self.children[index].delete(key);
+            }
+            DeleteFromChildOperation::RotateLeft => {
+                self.children[index].delete(key);
+
+                let head = self.remove_head_entry();
+                self.children[index].push_kv(head);
+
+                let head = self.children[index + 1].remove_head_entry();
+                self.insert_entry(0, head);
+            }
+            DeleteFromChildOperation::RotateRight => {
+                self.children[index].delete(key);
+
+                let tail = self.remove_tail_entry();
+                self.children[index].insert_entry(0, tail);
+
+                let tail = self.children[index - 1].remove_tail_entry();
+                self.push_kv(tail);
+            }
+            DeleteFromChildOperation::MergeToLeft => {
+                self.children[index].delete(key);
+
+                let tail = self.remove_tail_entry();
+                self.children[index - 1].push_kv(tail);
+
+                if let Some(child) = self.children.pop() {
+                    for entry in child.entry() {
+                        self.children[index - 1].push_kv(entry);
+                    }
+                }
+            }
+            DeleteFromChildOperation::MergeToRight => {
+                self.children[index].delete(key);
+
+                let head = self.remove_head_entry();
+                self.children[index + 1].insert_entry(0, head);
+
+                let child = self.children.remove(0);
+                for entry in child.entry().rev() {
+                    self.children[index + 1].insert_entry(0, entry);
+                }
+            }
+            DeleteFromChildOperation::MergeToSelf => {
+                let left_child = self.children.remove(0);
+                let right_child = self.children.remove(0);
+
+                let mut new_keys = left_child.keys;
+                new_keys.extend(&self.keys);
+                new_keys.extend(right_child.keys);
+
+                let mut new_values = left_child.values;
+                new_values.extend(&self.values);
+                new_values.extend(right_child.values);
+
+                self.keys = new_keys;
+                self.values = new_values;
+            }
+        }
     }
 }
 

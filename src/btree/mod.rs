@@ -13,6 +13,16 @@ pub(crate) trait Delete {
     fn delete(&mut self, key: i32);
 }
 
+pub(crate) trait Merge {
+    fn merge(self, other: Self) -> Self;
+}
+
+impl<T: Merge> Merge for Box<T> {
+    fn merge(self, other: Self) -> Self {
+        Box::new((*self).merge(*other))
+    }
+}
+
 pub(crate) trait BinarySearch<T: 'static> {
     fn binary_lookup(&self, key: &T) -> Result<usize, usize>;
 }
