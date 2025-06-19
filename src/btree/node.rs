@@ -261,14 +261,18 @@ enum DeleteFromChildOperation {
 impl BtreeNode {
     fn resolve_delete_from_self_operation(&mut self) -> DeleteFromSelfOperation {
         if let Some(entry) = self.children[0].pop_max() {
+            // 一番左の部分木が余分な要素を持っている
             return DeleteFromSelfOperation::Replace(entry);
         }
         if let Some(entry) = self.children[1].pop_min() {
+            // 一番左から、一つ右の部分木が余分な要素を持っている
             return DeleteFromSelfOperation::Replace(entry);
         }
         if self.current_count() != 1 {
+            // どちらの部分木も余分な要素をもっていない
             return DeleteFromSelfOperation::Merge;
         }
+        // どちらの部分木も余分な要素をもっていないかつ、自身も余分な要素をもっていない
         DeleteFromSelfOperation::MergeToSelf
     }
 
@@ -334,21 +338,22 @@ impl BtreeNode {
             return DeleteFromChildOperation::Delete;
         }
         if index == self.children.len() - 1 && self.children[index - 1].is_more_than_min_count() {
-            // 子ノードが一番右かつ、一つ左が十分なノードを持っている
+            // 子ノードが一番右かつ、一つ左が十分な要素を持っている
             return DeleteFromChildOperation::RotateRight;
         }
         if index < self.children.len() - 1 && self.children[index + 1].is_more_than_min_count() {
-            // 子ノードが一番左かつ、一つ右が十分なノードを持っている
+            // 子ノードが一番左かつ、一つ右が十分な要素を持っている
             return DeleteFromChildOperation::RotateLeft;
         }
         if self.current_count() != 1 && index == self.children.len() - 1 {
-            // 子ノードが一番右かつ、一つ左が十分なノードを持っていない
+            // 子ノードが一番右かつ、一つ左が十分な要素を持っていない
             return DeleteFromChildOperation::MergeToLeft;
         }
         if self.current_count() != 1 && index < self.children.len() - 1 {
-            // 子ノードが一番左かつ、一つ右が十分なノードを持っていない
+            // 子ノードが一番左かつ、一つ右が十分な要素を持っていない
             return DeleteFromChildOperation::MergeToRight;
         }
+        // すべての子ノードが十分な要素を持っていない
         DeleteFromChildOperation::MergeToSelf
     }
 

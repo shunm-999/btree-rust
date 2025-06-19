@@ -126,4 +126,58 @@ mod tests {
             assert_eq!(tree.search(i * 10), Some((i * 10, i * 100)));
         }
     }
+
+    #[test]
+    fn test_delete_basic() {
+        let mut tree = Btree::new(3);
+        tree.insert(10, 100);
+        tree.insert(20, 200);
+        tree.insert(30, 300);
+        assert_eq!(tree.search(20), Some((20, 200)));
+        tree.delete(20);
+        assert_eq!(tree.search(20), None);
+        assert_eq!(tree.search(10), Some((10, 100)));
+        assert_eq!(tree.search(30), Some((30, 300)));
+    }
+
+    #[test]
+    fn test_delete_nonexistent_key() {
+        let mut tree = Btree::new(3);
+        tree.insert(10, 100);
+        tree.insert(20, 200);
+        tree.delete(30); // 存在しないキー
+        assert_eq!(tree.search(10), Some((10, 100)));
+        assert_eq!(tree.search(20), Some((20, 200)));
+    }
+
+    #[test]
+    fn test_delete_all_keys() {
+        let mut tree = Btree::new(3);
+        tree.insert(10, 100);
+        tree.insert(20, 200);
+        tree.insert(30, 300);
+        tree.delete(10);
+        tree.delete(20);
+        tree.delete(30);
+        assert_eq!(tree.search(10), None);
+        assert_eq!(tree.search(20), None);
+        assert_eq!(tree.search(30), None);
+    }
+
+    #[test]
+    fn test_delete_with_split_and_merge() {
+        let mut tree = Btree::new(3);
+        for i in 1..=7 {
+            tree.insert(i * 10, i * 100);
+        }
+        // 40, 50, 60, 70を削除してマージが発生するか確認
+        for k in [40, 50, 60, 70] {
+            tree.delete(k);
+            assert_eq!(tree.search(k), None);
+        }
+        // 残りのキーが正しく残っているか
+        for k in [10, 20, 30] {
+            assert_eq!(tree.search(k), Some((k, k * 10)));
+        }
+    }
 }
