@@ -1,5 +1,6 @@
 use crate::btree::node::{BtreeNode, NodeSplit};
-use crate::btree::{Insert, Search};
+use crate::btree::{Delete, Insert, Search};
+use std::ops::Deref;
 
 #[derive(Clone)]
 pub struct Btree {
@@ -41,6 +42,15 @@ impl Insert for Btree {
         }
 
         self.root = Some(root);
+    }
+}
+
+impl Delete for Btree {
+    fn delete(&mut self, key: i32) {
+        match &mut self.root {
+            None => {}
+            Some(root) => root.delete(key),
+        }
     }
 }
 
