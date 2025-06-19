@@ -1,4 +1,5 @@
 use crate::btree::{BinarySearch, Delete, Insert, Merge, Search};
+use std::fmt::Display;
 
 #[derive(Clone)]
 pub(crate) struct BtreeNode {
@@ -247,10 +248,9 @@ enum DeleteFromSelfOperation {
     Merge,
     MergeToSelf,
 }
-
 enum DeleteFromChildOperation {
     None,
-    Delete,
+    Delegate,
     RotateLeft,
     RotateRight,
     MergeToLeft,
@@ -325,7 +325,7 @@ impl BtreeNode {
         }
         if !self.children[index].is_leaf() {
             // 子ノードが内部ノード
-            return DeleteFromChildOperation::Delete;
+            return DeleteFromChildOperation::Delegate;
         }
 
         if !self.children[index].has_key(key) {
@@ -335,14 +335,14 @@ impl BtreeNode {
 
         if self.children[index].is_more_than_min_count() {
             // 子ノードが葉ノードかつ、minCountより大きいなら再起的に処理する
-            return DeleteFromChildOperation::Delete;
+            return DeleteFromChildOperation::Delegate;
         }
         if index == self.children.len() - 1 && self.children[index - 1].is_more_than_min_count() {
             // 子ノードが一番右かつ、一つ左が十分な要素を持っている
             return DeleteFromChildOperation::RotateRight;
         }
         if index < self.children.len() - 1 && self.children[index + 1].is_more_than_min_count() {
-            // 子ノードが一番左かつ、一つ右が十分な要素を持っている
+            // 子ノードが一番右以外かつ、一つ右が十分な要素を持っている
             return DeleteFromChildOperation::RotateLeft;
         }
         if self.current_count() != 1 && index == self.children.len() - 1 {
@@ -350,10 +350,10 @@ impl BtreeNode {
             return DeleteFromChildOperation::MergeToLeft;
         }
         if self.current_count() != 1 && index < self.children.len() - 1 {
-            // 子ノードが一番左かつ、一つ右が十分な要素を持っていない
+            // 子ノードが一番右以外かつ、一つ右が十分な要素を持っていない
             return DeleteFromChildOperation::MergeToRight;
         }
-        // すべての子ノードが十分な要素を持っていない
+        // 自身の要素が１
         DeleteFromChildOperation::MergeToSelf
     }
 
@@ -365,7 +365,7 @@ impl BtreeNode {
     ) {
         match operation {
             DeleteFromChildOperation::None => {}
-            DeleteFromChildOperation::Delete => {
+            DeleteFromChildOperation::Delegate => {
                 self.children[index].delete(key);
             }
             DeleteFromChildOperation::RotateLeft => {
@@ -410,16 +410,29 @@ impl BtreeNode {
                 }
             }
             DeleteFromChildOperation::MergeToSelf => {
-                let left_child = self.children.remove(0);
-                let right_child = self.children.remove(0);
+                let mut left = self.children.remove(0);
+                let mut right = self.children.remove(0);
 
-                let mut new_keys = left_child.keys;
-                new_keys.extend(&self.keys);
-                new_keys.extend(right_child.keys);
+                if left.has_key(key) {
+                    left.delete(key);
+                }
+                if right.has_key(key) {
+                    right.delete(key);
+                }
 
-                let mut new_values = left_child.values;
-                new_values.extend(&self.values);
-                new_values.extend(right_child.values);
+                let new_keys = {
+                    let mut new_keys = left.keys;
+                    new_keys.extend(&self.keys);
+                    new_keys.extend(right.keys);
+                    new_keys
+                };
+
+                let new_values = {
+                    let mut new_values = left.values;
+                    new_values.extend(&self.values);
+                    new_values.extend(right.values);
+                    new_values
+                };
 
                 self.keys = new_keys;
                 self.values = new_values;
