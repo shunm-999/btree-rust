@@ -1,5 +1,5 @@
 mod node;
-mod tree;
+pub(crate) mod tree;
 
 pub(crate) trait Search {
     fn search(&self, key: i32) -> Option<(i32, i32)>;
