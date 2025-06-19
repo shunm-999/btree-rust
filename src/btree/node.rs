@@ -286,11 +286,29 @@ impl BtreeNode {
                 self.keys.remove(index);
                 self.values.remove(index);
 
-                let left = self.children.remove(index);
-                let right = self.children.remove(index);
-                self.children.insert(index, left.merge(right));
+                let merged = {
+                    let left = self.children.remove(index);
+                    let right = self.children.remove(index);
+                    left.merge(right)
+                };
+
+                self.children.insert(index, merged);
             }
-            DeleteFromSelfOperation::MergeToSelf => {}
+            DeleteFromSelfOperation::MergeToSelf => {
+                self.keys.remove(index);
+                self.values.remove(index);
+
+                let merged = {
+                    let left = self.children.remove(index);
+                    let right = self.children.remove(index);
+                    left.merge(right)
+                };
+
+                self.keys = merged.keys;
+                self.values = merged.values;
+                self.children = merged.children;
+                self.max_count = merged.max_count;
+            }
         }
     }
 }
