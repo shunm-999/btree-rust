@@ -1,6 +1,5 @@
 use crate::btree::node::{BtreeNode, NodeSplit};
 use crate::btree::{Delete, Insert, Search};
-use std::ops::Deref;
 
 #[derive(Clone)]
 pub struct Btree {

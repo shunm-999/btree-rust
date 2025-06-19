@@ -410,28 +410,30 @@ impl BtreeNode {
                 }
             }
             DeleteFromChildOperation::MergeToSelf => {
-                let mut left = self.children.remove(0);
-                let mut right = self.children.remove(0);
+                let (new_keys, new_values) = {
+                    let mut left = self.children.remove(0);
+                    let mut right = self.children.remove(0);
 
-                if left.has_key(key) {
-                    left.delete(key);
-                }
-                if right.has_key(key) {
-                    right.delete(key);
-                }
+                    if left.has_key(key) {
+                        left.delete(key);
+                    }
+                    if right.has_key(key) {
+                        right.delete(key);
+                    }
+                    let new_keys = {
+                        let mut new_keys = left.keys;
+                        new_keys.extend(&self.keys);
+                        new_keys.extend(right.keys);
+                        new_keys
+                    };
 
-                let new_keys = {
-                    let mut new_keys = left.keys;
-                    new_keys.extend(&self.keys);
-                    new_keys.extend(right.keys);
-                    new_keys
-                };
-
-                let new_values = {
-                    let mut new_values = left.values;
-                    new_values.extend(&self.values);
-                    new_values.extend(right.values);
-                    new_values
+                    let new_values = {
+                        let mut new_values = left.values;
+                        new_values.extend(&self.values);
+                        new_values.extend(right.values);
+                        new_values
+                    };
+                    (new_keys, new_values)
                 };
 
                 self.keys = new_keys;
