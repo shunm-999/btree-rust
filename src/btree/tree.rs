@@ -49,7 +49,13 @@ impl Delete for Btree {
     fn delete(&mut self, key: i32) {
         match &mut self.root {
             None => {}
-            Some(root) => root.delete(key),
+            Some(root) => {
+                root.delete(key);
+
+                if root.is_empty() {
+                    self.root = None;
+                }
+            }
         }
     }
 }

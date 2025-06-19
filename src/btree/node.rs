@@ -49,10 +49,6 @@ impl BtreeNode {
         self.children.is_empty()
     }
 
-    fn is_empty(&self) -> bool {
-        self.keys.is_empty()
-    }
-
     fn current_count(&self) -> usize {
         self.keys.len()
     }
@@ -82,6 +78,10 @@ impl BtreeNode {
         let key = self.keys.remove(self.keys.len() - 1);
         let value = self.values.remove(self.values.len() - 1);
         (key, value)
+    }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        self.keys.is_empty()
     }
 
     pub(crate) fn is_full(&self) -> bool {
