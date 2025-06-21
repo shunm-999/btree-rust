@@ -1,13 +1,13 @@
-use crate::btree::node::{BtreeNode, NodeSplit};
+use crate::btree::node::BtreeNode;
 use crate::btree::{Delete, Insert, Search};
 
 #[derive(Clone)]
-pub struct Btree {
-    root: Option<BtreeNode>,
+pub struct Btree<V: 'static + Clone> {
+    root: Option<BtreeNode<V>>,
     max_count: usize,
 }
 
-impl Btree {
+impl<V: 'static + Clone> Btree<V> {
     fn new(max_count: usize) -> Self {
         Btree {
             root: None,
@@ -16,8 +16,8 @@ impl Btree {
     }
 }
 
-impl Search for Btree {
-    fn search(&self, target_key: i32) -> Option<(i32, i32)> {
+impl<V: 'static + Clone> Search<V> for Btree<V> {
+    fn search(&self, target_key: i32) -> Option<(i32, V)> {
         match &self.root {
             None => None,
             Some(root) => root.search(target_key),
@@ -25,13 +25,13 @@ impl Search for Btree {
     }
 }
 
-impl Insert for Btree {
-    fn insert(&mut self, key: i32, value: i32) {
+impl<V: 'static + Clone> Insert<V> for Btree<V> {
+    fn insert(&mut self, key: i32, value: V) {
         let mut root = self.root.take().unwrap_or(BtreeNode::new(self.max_count));
         root.insert(key, value);
 
         if root.is_full() {
-            let ((key, value), NodeSplit { left, right }) = root.split_node();
+            let ((key, value), (left, right)) = root.split_node();
             root = BtreeNode::from(
                 vec![key],
                 vec![value],
@@ -44,7 +44,7 @@ impl Insert for Btree {
     }
 }
 
-impl Delete for Btree {
+impl<V: 'static + Clone> Delete for Btree<V> {
     fn delete(&mut self, key: i32) {
         match &mut self.root {
             None => {}

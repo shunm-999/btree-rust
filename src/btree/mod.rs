@@ -1,12 +1,12 @@
 mod node;
 pub(crate) mod tree;
 
-pub(crate) trait Search {
-    fn search(&self, key: i32) -> Option<(i32, i32)>;
+pub(crate) trait Search<V> {
+    fn search(&self, key: i32) -> Option<(i32, V)>;
 }
 
-pub(crate) trait Insert {
-    fn insert(&mut self, key: i32, value: i32);
+pub(crate) trait Insert<V> {
+    fn insert(&mut self, key: i32, value: V);
 }
 
 pub(crate) trait Delete {
