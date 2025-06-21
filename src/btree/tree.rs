@@ -64,13 +64,13 @@ mod tests {
 
     #[test]
     fn test_empty_tree_search() {
-        let tree = Btree::new(3);
+        let tree: Btree<i32> = Btree::new(3);
         assert_eq!(tree.search(1), None);
     }
 
     #[test]
     fn test_insert_and_search() {
-        let mut tree = Btree::new(3);
+        let mut tree: Btree<i32> = Btree::new(3);
 
         // 基本的な挿入と検索のテスト
         tree.insert(10, 100);
@@ -89,7 +89,7 @@ mod tests {
 
     #[test]
     fn test_insert_same_key() {
-        let mut tree = Btree::new(3);
+        let mut tree: Btree<i32> = Btree::new(3);
 
         // 同じキーに対する上書きのテスト
         tree.insert(10, 100);
@@ -100,7 +100,7 @@ mod tests {
 
     #[test]
     fn test_node_split() {
-        let mut tree = Btree::new(3); // max_count = 3 のノード
+        let mut tree: Btree<i32> = Btree::new(3); // max_count = 3 のノード
 
         // ノードがいっぱいになるまで挿入
         tree.insert(10, 100);
@@ -119,7 +119,7 @@ mod tests {
 
     #[test]
     fn test_multiple_splits() {
-        let mut tree = Btree::new(3);
+        let mut tree: Btree<i32> = Btree::new(3);
 
         // 複数回の分割を発生させる
         for i in 1..=10 {
@@ -134,7 +134,7 @@ mod tests {
 
     #[test]
     fn test_delete_basic() {
-        let mut tree = Btree::new(3);
+        let mut tree: Btree<i32> = Btree::new(3);
         tree.insert(10, 100);
         tree.insert(20, 200);
         tree.insert(30, 300);
@@ -147,7 +147,7 @@ mod tests {
 
     #[test]
     fn test_delete_nonexistent_key() {
-        let mut tree = Btree::new(3);
+        let mut tree: Btree<i32> = Btree::new(3);
         tree.insert(10, 100);
         tree.insert(20, 200);
         tree.delete(30); // 存在しないキー
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn test_delete_all_keys() {
-        let mut tree = Btree::new(3);
+        let mut tree: Btree<i32> = Btree::new(3);
         tree.insert(10, 100);
         tree.insert(20, 200);
         tree.insert(30, 300);
@@ -171,7 +171,7 @@ mod tests {
 
     #[test]
     fn test_delete_with_split_and_merge() {
-        let mut tree = Btree::new(3);
+        let mut tree: Btree<i32> = Btree::new(3);
         for i in 1..=7 {
             tree.insert(i * 10, i * 100);
         }
