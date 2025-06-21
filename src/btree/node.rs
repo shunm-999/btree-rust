@@ -1,20 +1,20 @@
 use crate::btree::{BinarySearch, Delete, Insert, Merge, Search};
 
 #[derive(Clone)]
-pub(crate) struct BtreeNode<V: 'static + Clone> {
-    keys: Vec<i32>,
+pub(crate) struct BtreeNode<K: 'static + Clone, V: 'static + Clone> {
+    keys: Vec<K>,
     values: Vec<V>,
-    children: Vec<Box<BtreeNode<V>>>,
+    children: Vec<Box<BtreeNode<K, V>>>,
     max_count: usize,
 }
 
 #[derive(Clone)]
-pub(crate) struct BtreeNodeEntry<V: 'static + Clone> {
-    keys: Vec<i32>,
+pub(crate) struct BtreeNodeEntry<K: 'static + Clone + PartialEq + PartialOrd, V: 'static + Clone> {
+    keys: Vec<K>,
     values: Vec<V>,
 }
 
-impl<V: 'static + Clone> BtreeNode<V> {
+impl<K: 'static + Clone + PartialEq + PartialOrd, V: 'static + Clone> BtreeNode<K, V> {
     pub(crate) fn new(max_count: usize) -> Self {
         Self {
             keys: vec![],
@@ -25,9 +25,9 @@ impl<V: 'static + Clone> BtreeNode<V> {
     }
 
     pub(crate) fn from(
-        keys: Vec<i32>,
+        keys: Vec<K>,
         values: Vec<V>,
-        children: Vec<Box<BtreeNode<V>>>,
+        children: Vec<Box<BtreeNode<K, V>>>,
         max_count: usize,
     ) -> Self {
         Self {
@@ -39,7 +39,7 @@ impl<V: 'static + Clone> BtreeNode<V> {
     }
 }
 
-impl<V: 'static + Clone> BtreeNode<V> {
+impl<K: 'static + Clone + PartialEq + PartialOrd, V: 'static + Clone> BtreeNode<K, V> {
     fn is_leaf(&self) -> bool {
         self.children.is_empty()
     }
@@ -51,25 +51,25 @@ impl<V: 'static + Clone> BtreeNode<V> {
         self.max_count / 2
     }
 
-    fn push_kv(&mut self, pair: (i32, V)) {
+    fn push_kv(&mut self, pair: (K, V)) {
         let (key, value) = pair;
         self.keys.push(key);
         self.values.push(value);
     }
 
-    fn insert_entry(&mut self, index: usize, pair: (i32, V)) {
+    fn insert_entry(&mut self, index: usize, pair: (K, V)) {
         let (key, value) = pair;
         self.keys.insert(index, key);
         self.values.insert(index, value);
     }
 
-    fn remove_head_entry(&mut self) -> (i32, V) {
+    fn remove_head_entry(&mut self) -> (K, V) {
         let key = self.keys.remove(0);
         let value = self.values.remove(0);
         (key, value)
     }
 
-    fn remove_tail_entry(&mut self) -> (i32, V) {
+    fn remove_tail_entry(&mut self) -> (K, V) {
         let key = self.keys.remove(self.keys.len() - 1);
         let value = self.values.remove(self.values.len() - 1);
         (key, value)
@@ -87,11 +87,11 @@ impl<V: 'static + Clone> BtreeNode<V> {
         self.current_count() > self.min_count()
     }
 
-    pub(crate) fn has_key(&self, key: i32) -> bool {
+    pub(crate) fn has_key(&self, key: &K) -> bool {
         self.keys.contains(&key)
     }
 
-    pub(crate) fn split_node(&self) -> ((i32, V), (BtreeNode<V>, BtreeNode<V>)) {
+    pub(crate) fn split_node(&self) -> ((K, V), (BtreeNode<K, V>, BtreeNode<K, V>)) {
         let mid_index = self.keys.len() / 2;
         let split = {
             let left = BtreeNode::from(
@@ -116,12 +116,12 @@ impl<V: 'static + Clone> BtreeNode<V> {
             );
             (left, right)
         };
-        let key = self.keys[mid_index];
+        let key = self.keys[mid_index].clone();
         let value = self.values[mid_index].clone();
         ((key, value), split)
     }
 
-    pub(crate) fn entry(self) -> BtreeNodeEntry<V> {
+    pub(crate) fn entry(self) -> BtreeNodeEntry<K, V> {
         BtreeNodeEntry {
             keys: self.keys,
             values: self.values,
@@ -129,11 +129,13 @@ impl<V: 'static + Clone> BtreeNode<V> {
     }
 }
 
-impl<V: 'static + Clone> Search<V> for BtreeNode<V> {
-    fn search(&self, key: i32) -> Option<(i32, V)> {
+impl<K: 'static + Clone + PartialEq + PartialOrd, V: 'static + Clone> Search<K, V>
+    for BtreeNode<K, V>
+{
+    fn search(&self, key: &K) -> Option<(K, V)> {
         match self.keys.binary_lookup(&key) {
             // key found in this node
-            Ok(i) => Some((self.keys[i], self.values[i].clone())),
+            Ok(i) => Some((self.keys[i].clone(), self.values[i].clone())),
             // key not found, recurse into appropriate child node
             Err(i) => {
                 if self.is_leaf() {
@@ -146,8 +148,8 @@ impl<V: 'static + Clone> Search<V> for BtreeNode<V> {
     }
 }
 
-impl<V: 'static + Clone> BtreeNode<V> {
-    fn pop_min(&mut self) -> Option<(i32, V)> {
+impl<K: 'static + Clone + PartialEq + PartialOrd, V: 'static + Clone> BtreeNode<K, V> {
+    fn pop_min(&mut self) -> Option<(K, V)> {
         if !self.is_leaf() {
             return self.children[0].pop_min();
         }
@@ -157,7 +159,7 @@ impl<V: 'static + Clone> BtreeNode<V> {
         }
         None
     }
-    fn pop_max(&mut self) -> Option<(i32, V)> {
+    fn pop_max(&mut self) -> Option<(K, V)> {
         if !self.is_leaf() {
             return self.children[0].pop_max();
         }
@@ -170,8 +172,10 @@ impl<V: 'static + Clone> BtreeNode<V> {
     }
 }
 
-impl<V: 'static + Clone> Insert<V> for BtreeNode<V> {
-    fn insert(&mut self, key: i32, value: V) {
+impl<K: 'static + Clone + PartialEq + PartialOrd, V: 'static + Clone> Insert<K, V>
+    for BtreeNode<K, V>
+{
+    fn insert(&mut self, key: K, value: V) {
         match self.keys.binary_lookup(&key) {
             Ok(i) => {
                 self.keys[i] = key;
@@ -199,8 +203,10 @@ impl<V: 'static + Clone> Insert<V> for BtreeNode<V> {
     }
 }
 
-impl<V: 'static + Clone> Delete for BtreeNode<V> {
-    fn delete(&mut self, key: i32) {
+impl<K: 'static + Clone + PartialEq + PartialOrd, V: 'static + Clone> Delete<K>
+    for BtreeNode<K, V>
+{
+    fn delete(&mut self, key: &K) {
         match self.keys.binary_lookup(&key) {
             Ok(i) => {
                 if self.is_leaf() {
@@ -214,14 +220,14 @@ impl<V: 'static + Clone> Delete for BtreeNode<V> {
                 }
             }
             Err(i) => {
-                let operation = self.get_delete_from_child_operation(key, i);
+                let operation = self.get_delete_from_child_operation(&key, i);
                 self.apply_delete_from_child_operation(key, i, operation);
             }
         }
     }
 }
 
-impl<V: 'static + Clone> Merge for BtreeNode<V> {
+impl<K: 'static + Clone + PartialEq + PartialOrd, V: 'static + Clone> Merge for BtreeNode<K, V> {
     fn merge(self, other: Self) -> Self {
         let keys = [self.keys, other.keys].concat();
         let values = [self.values, other.values].concat();
@@ -236,8 +242,8 @@ impl<V: 'static + Clone> Merge for BtreeNode<V> {
     }
 }
 
-enum DeleteFromSelfOperation<V: 'static + Clone> {
-    Replace((i32, V)),
+enum DeleteFromSelfOperation<K: 'static + Clone + PartialEq + PartialOrd, V: 'static + Clone> {
+    Replace((K, V)),
     Merge,
     MergeToSelf,
 }
@@ -251,8 +257,8 @@ enum DeleteFromChildOperation {
     MergeToSelf,
 }
 
-impl<V: 'static + Clone> BtreeNode<V> {
-    fn resolve_delete_from_self_operation(&mut self) -> DeleteFromSelfOperation<V> {
+impl<K: 'static + Clone + PartialEq + PartialOrd, V: 'static + Clone> BtreeNode<K, V> {
+    fn resolve_delete_from_self_operation(&mut self) -> DeleteFromSelfOperation<K, V> {
         if let Some(entry) = self.children[0].pop_max() {
             // 一番左の部分木が余分な要素を持っている
             return DeleteFromSelfOperation::Replace(entry);
@@ -272,7 +278,7 @@ impl<V: 'static + Clone> BtreeNode<V> {
     fn apply_delete_from_self_operation(
         &mut self,
         index: usize,
-        operation: DeleteFromSelfOperation<V>,
+        operation: DeleteFromSelfOperation<K, V>,
     ) {
         match operation {
             DeleteFromSelfOperation::Replace((key, value)) => {
@@ -310,8 +316,8 @@ impl<V: 'static + Clone> BtreeNode<V> {
     }
 }
 
-impl<V: 'static + Clone> BtreeNode<V> {
-    fn get_delete_from_child_operation(&self, key: i32, index: usize) -> DeleteFromChildOperation {
+impl<K: 'static + Clone + PartialEq + PartialOrd, V: 'static + Clone> BtreeNode<K, V> {
+    fn get_delete_from_child_operation(&self, key: &K, index: usize) -> DeleteFromChildOperation {
         if self.is_leaf() {
             // 葉ノードにkeyが存在しない
             return DeleteFromChildOperation::None;
@@ -352,7 +358,7 @@ impl<V: 'static + Clone> BtreeNode<V> {
 
     fn apply_delete_from_child_operation(
         &mut self,
-        key: i32,
+        key: &K,
         index: usize,
         operation: DeleteFromChildOperation,
     ) {
@@ -407,15 +413,15 @@ impl<V: 'static + Clone> BtreeNode<V> {
                     let mut left = self.children.remove(0);
                     let mut right = self.children.remove(0);
 
-                    if left.has_key(key) {
+                    if left.has_key(&key) {
                         left.delete(key);
                     }
-                    if right.has_key(key) {
+                    if right.has_key(&key) {
                         right.delete(key);
                     }
                     let new_keys = {
                         let mut new_keys = left.keys;
-                        new_keys.extend(&self.keys);
+                        new_keys.extend(self.keys.clone());
                         new_keys.extend(right.keys);
                         new_keys
                     };
@@ -436,8 +442,10 @@ impl<V: 'static + Clone> BtreeNode<V> {
     }
 }
 
-impl<V: 'static + Clone> Iterator for BtreeNodeEntry<V> {
-    type Item = (i32, V);
+impl<K: 'static + Clone + PartialEq + PartialOrd, V: 'static + Clone> Iterator
+    for BtreeNodeEntry<K, V>
+{
+    type Item = (K, V);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.keys.is_empty() {
@@ -447,7 +455,9 @@ impl<V: 'static + Clone> Iterator for BtreeNodeEntry<V> {
     }
 }
 
-impl<V: 'static + Clone> DoubleEndedIterator for BtreeNodeEntry<V> {
+impl<K: 'static + Clone + PartialEq + PartialOrd, V: 'static + Clone> DoubleEndedIterator
+    for BtreeNodeEntry<K, V>
+{
     fn next_back(&mut self) -> Option<Self::Item> {
         let key = self.keys.pop()?;
         let value = self.values.pop()?;

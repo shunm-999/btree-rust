@@ -1,16 +1,16 @@
 mod node;
 pub(crate) mod tree;
 
-pub(crate) trait Search<V> {
-    fn search(&self, key: i32) -> Option<(i32, V)>;
+pub(crate) trait Search<K, V> {
+    fn search(&self, key: &K) -> Option<(K, V)>;
 }
 
-pub(crate) trait Insert<V> {
-    fn insert(&mut self, key: i32, value: V);
+pub(crate) trait Insert<K, V> {
+    fn insert(&mut self, key: K, value: V);
 }
 
-pub(crate) trait Delete {
-    fn delete(&mut self, key: i32);
+pub(crate) trait Delete<K> {
+    fn delete(&mut self, key: &K);
 }
 
 pub(crate) trait Merge {
@@ -23,7 +23,7 @@ impl<T: Merge> Merge for Box<T> {
     }
 }
 
-pub(crate) trait BinarySearch<T: 'static> {
+pub(crate) trait BinarySearch<T> {
     fn binary_lookup(&self, key: &T) -> Result<usize, usize>;
 }
 
